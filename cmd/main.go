@@ -9,7 +9,7 @@ import (
 	// "github.com/google/gopacket"
 	// "github.com/google/gopacket/pcap"
 )
-
+// Netflow v5 header
 type NetFlowV5Template struct {
 	version	uint16
 	count uint16
@@ -22,6 +22,7 @@ type NetFlowV5Template struct {
 	samplInterval uint16
 }
 
+// Netflow v9 header
 type NetFlowV9Template struct {
 	version	uint16
 	count uint16
@@ -32,14 +33,17 @@ type NetFlowV9Template struct {
 	NetFlowFlowset []NetFlowFlowset
 }
 
+// Flowset structure for v9
 type NetFlowFlowset struct {
 	flowSetId   uint16
 	flowSetLength	uint16
 	flowRecords flowRecords
 }
 
+// Flow structure in Flowset
 type flowRecords interface{}
 
+// Flow structure for 256 template
 type NetFlowTemplate256 struct {
 	LAST_SWITCHED uint32
 	FIRST_SWITCHED uint32
@@ -56,7 +60,8 @@ const (
 )
 
 func main() {
-	// Открываем UDP-порт для получения пакетов
+
+	// UDP port 2055 all interface
 	addr, err := net.ResolveUDPAddr("udp", listenPort)
 	fmt.Println(addr)
 	if err != nil {
@@ -64,6 +69,7 @@ func main() {
 		os.Exit(1)
 	}
 
+	// Open UDP port for listen
 	conn, err := net.ListenUDP("udp", addr)
 	if err != nil {
 		log.Fatal(err)
@@ -73,7 +79,8 @@ func main() {
 
 	fmt.Println("NetFlow Collector is listening on", listenPort)
 
-	buf := make([]byte, 65535) // Буфер для чтения пакетов
+	// Buffer for packets
+	buf := make([]byte, 65535)
 	for {
 		n, addr, err := conn.ReadFromUDP(buf)
 		if err != nil {
@@ -81,10 +88,10 @@ func main() {
 		}
 		fmt.Printf("Received packet from %s, length: %d bytes\n", addr, n)
 
-		// Обработка NetFlow пакета (здесь будет парсинг)
+		// Processing netflow packet
 		template := parseNetFlowPacketHeader(buf[:n])
 
-		// Используем type switch для обработки разных типов
+		// Template-based data output
 		switch t := template.(type) {
 		case NetFlowV9Template:
 			fmt.Printf("Version: %d\n", t.version)
@@ -104,7 +111,7 @@ func main() {
 				fmt.Printf("FlowSetId: %d\n", flowset.flowSetId)
 				fmt.Printf("FlowSetLength: %d\n", flowset.flowSetLength)
 
-				// Проверяем, что flowRecords содержит NetFlowTemplate256
+				// Check that flowRecords contains NetFlowTemplate256
 				if template256, ok := flowset.flowRecords.(NetFlowTemplate256); ok {
 					fmt.Printf("LAST_SWITCHED: %d\n", template256.LAST_SWITCHED)
 					fmt.Printf("FIRST_SWITCHED: %d\n", template256.FIRST_SWITCHED)
@@ -133,7 +140,7 @@ func main() {
 	}
 }
 
-// Пример простого парсинга NetFlow пакета (зависит от версии)
+// Parse netflow packet
 func parseNetFlowPacketHeader(packet []byte) interface{} {
 	version := binary.BigEndian.Uint16(packet[0:2])
 
@@ -186,7 +193,7 @@ func parseNetFlowPacketHeader(packet []byte) interface{} {
 	return nil
 }
 
-// Функция для парсинга FlowSet
+// Parse FlowSet
 func ParseNetFlowSets(flowSets []byte) []NetFlowFlowset {
 
 	flowSets_length := uint16(len(flowSets))
