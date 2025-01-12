@@ -35,7 +35,7 @@ type NetFlowV9Template struct {
 type NetFlowFlowset struct {
 	flowSetId   uint16
 	flowSetLength	uint16
-	flowRecords []flowRecords
+	flowRecords flowRecords
 }
 
 type flowRecords interface{}
